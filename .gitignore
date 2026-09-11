@@ -1,0 +1,7 @@
+node_modules/
+dist/
+EXEMPLO/
+VISUAL/
+public/assets/
+public/assets/*.tif
+public/assets/preview-ortofoto.png
