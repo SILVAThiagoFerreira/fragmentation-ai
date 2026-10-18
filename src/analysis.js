@@ -19,3 +19,11 @@ export function buildDistribution(diameters) {
   const swebrec = real.map((row) => ({ ...row, passing: clamp(100 * (1 - Math.exp(-Math.pow(row.size / (d50 || 1), 1.25))), 0, 100) }));
   return { d10, d50, d80, real, kuzRam, swebrec, sorted };
 }
+
+// A escala informada refere-se ao pixel nativo da ortofoto. A análise roda na
+// imagem reduzida para exibição (DISPLAY_LIMIT), então cada pixel analisado
+// cobre naturalWidth / displayWidth pixels nativos.
+export function effectiveMmPerPixel(scaleMm, naturalWidth, displayWidth) {
+  if (!(naturalWidth > 0) || !(displayWidth > 0)) return scaleMm;
+  return scaleMm * (naturalWidth / displayWidth);
+}

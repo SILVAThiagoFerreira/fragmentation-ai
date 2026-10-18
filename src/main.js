@@ -1,6 +1,7 @@
 import './styles.css';
 import demoImageUrl from './assets/ortofoto-exemplo.webp';
 import * as UTIF from 'utif';
+import { effectiveMmPerPixel } from './analysis.js';
 
 const DEMO_IMAGE = demoImageUrl;
 const DISPLAY_LIMIT = 1500;
@@ -203,17 +204,21 @@ function drawMarkers(ctx) {
 
 function drawChart() {
   const canvas = el('#chart-canvas'); const box = canvas.getBoundingClientRect(); const dpr = window.devicePixelRatio || 1; canvas.width = Math.max(420, Math.floor(box.width * dpr)); canvas.height = Math.max(250, Math.floor(box.height * dpr)); const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr); const w = box.width, h = box.height; ctx.clearRect(0, 0, w, h);
-  const pad = { l: 48, r: 18, t: 20, b: 38 }; const plotW = w - pad.l - pad.r, plotH = h - pad.t - pad.b; const result = state.result;
-  ctx.strokeStyle = '#dbe4e8'; ctx.lineWidth = 1; ctx.font = '11px Arial'; ctx.fillStyle = '#677782';
-  for (let i = 0; i <= 5; i++) { const y = pad.t + plotH - i / 5 * plotH; ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke(); ctx.fillText(`${i * 20}`, 12, y + 4); }
-  const min = 10, max = Math.max(2000, ...(result?.real || []).map((r) => r.size)); const lx = (value) => pad.l + (Math.log(value) - Math.log(min)) / (Math.log(max) - Math.log(min)) * plotW; const ly = (value) => pad.t + plotH - value / 100 * plotH;
-  [10, 20, 50, 100, 200, 400, 800, 1600].forEach((value) => { if (value > max) return; ctx.fillText(value, lx(value) - 8, h - 14); ctx.strokeStyle = '#eef2f3'; ctx.beginPath(); ctx.moveTo(lx(value), pad.t); ctx.lineTo(lx(value), pad.t + plotH); ctx.stroke(); });
-  if (!result) { ctx.fillStyle = '#82939c'; ctx.fillText('Execute uma leitura para visualizar a curva.', pad.l + 30, h / 2); return; }
+  const INK = '#3d4148', MUTED = '#8a8f96', LIGHT = '#c4c7cb';
+  const pad = { l: 36, r: 16, t: 22, b: 34 }; const plotW = w - pad.l - pad.r, plotH = h - pad.t - pad.b; const result = state.result; const baseY = pad.t + plotH;
+  ctx.font = '11px Arial'; ctx.fillStyle = MUTED; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let i = 0; i <= 5; i++) { const y = baseY - i / 5 * plotH; ctx.fillText(`${i * 20}`, pad.l - 8, y); }
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  const min = 10, max = Math.max(2000, ...(result?.real || []).map((r) => r.size)); const lx = (value) => pad.l + (Math.log(value) - Math.log(min)) / (Math.log(max) - Math.log(min)) * plotW; const ly = (value) => baseY - value / 100 * plotH;
+  ctx.strokeStyle = MUTED; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(pad.l, baseY); ctx.lineTo(w - pad.r, baseY); ctx.stroke();
+  [10, 20, 50, 100, 200, 400, 800, 1600].forEach((value) => { if (value > max) return; ctx.fillStyle = MUTED; ctx.textAlign = 'center'; ctx.fillText(value, lx(value), h - 12); });
+  ctx.textAlign = 'left';
+  if (!result) { ctx.fillStyle = MUTED; ctx.fillText('Execute uma leitura para visualizar a curva.', pad.l + 30, h / 2); return; }
   const histogram = new Array(12).fill(0); result.sorted.forEach((value) => { const bucket = clamp(Math.floor(Math.log(value / 10 + 1) / Math.log(2000 / 10 + 1) * histogram.length), 0, histogram.length - 1); histogram[bucket]++; }); const maxBin = Math.max(...histogram, 1);
-  histogram.forEach((count, index) => { const x = pad.l + index / histogram.length * plotW; const barW = plotW / histogram.length * 0.72; const barH = count / maxBin * plotH * 0.28; ctx.fillStyle = '#2452da'; ctx.fillRect(x, pad.t + plotH - barH, barW, barH); });
+  histogram.forEach((count, index) => { const x = pad.l + index / histogram.length * plotW; const barW = plotW / histogram.length * 0.72; const barH = count / maxBin * plotH * 0.28; ctx.fillStyle = LIGHT; ctx.fillRect(x, baseY - barH, barW, barH); if (count) { ctx.fillStyle = MUTED; ctx.font = '9px Arial'; ctx.textAlign = 'center'; ctx.fillText(String(count), x + barW / 2, baseY - barH - 4); ctx.textAlign = 'left'; ctx.font = '11px Arial'; } });
   const drawSeries = (rows, color, width) => { ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath(); rows.forEach((row, index) => { const x = lx(row.size), y = ly(row.passing); index ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); };
-  drawSeries(result.real, '#17232d', 2.4); drawSeries(result.kuzRam, '#21b889', 2.2); drawSeries(result.swebrec, '#e52663', 2.2);
-  [{ label: 'D10', value: result.d10, color: COLORS.medium }, { label: 'D50', value: result.d50, color: COLORS.coarse }, { label: 'D80', value: result.d80, color: COLORS.oversize }].forEach((marker) => { const x = lx(marker.value); ctx.strokeStyle = marker.color; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + plotH); ctx.stroke(); ctx.fillStyle = marker.color; ctx.font = '700 11px Arial'; ctx.fillText(marker.label, x - 9, pad.t + 12); });
+  drawSeries(result.kuzRam, MUTED, 1.6); drawSeries(result.swebrec, '#b5121b', 1.6); drawSeries(result.real, INK, 2.2);
+  [{ label: 'D10', value: result.d10 }, { label: 'D50', value: result.d50 }, { label: 'D80', value: result.d80 }].forEach((marker) => { const x = lx(marker.value); ctx.strokeStyle = INK; ctx.lineWidth = 0.8; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, baseY); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = INK; ctx.font = '700 10px Arial'; ctx.fillText(marker.label, x + 4, pad.t + 10); ctx.font = '11px Arial'; });
 }
 
 function renderMetrics() {
@@ -236,7 +241,7 @@ function setImage(image, name, url) {
 }
 
 function loadUrl(url, name) { const image = new Image(); image.onload = () => setImage(image, name, url); image.onerror = () => showToast('Não foi possível carregar a ortofoto.'); image.src = url; }
-function runAnalysis() { if (!state.image || state.roi.length < 3) { state.result = null; renderResult(); return; } state.loading = true; el('#analysis-status').innerHTML = '<i class="busy"></i> processando imagem'; setTimeout(() => { try { const ctx = document.createElement('canvas').getContext('2d'); ctx.canvas.width = state.displayWidth; ctx.canvas.height = state.displayHeight; ctx.drawImage(state.image, 0, 0, state.displayWidth, state.displayHeight); state.result = analyzePixels(ctx.getImageData(0, 0, state.displayWidth, state.displayHeight).data, state.displayWidth, state.displayHeight, state.roi, Number(state.scaleMm) || 50, state.quality); el('#analysis-status').innerHTML = '<i></i> análise concluída'; el('#map-hint').textContent = `${fmt(state.result.roiAreaM2, 0)} m² avaliados · ${fmtInt(state.result.sampleCount)} amostras`; state.loading = false; renderResult(); } catch (error) { state.loading = false; el('#analysis-status').innerHTML = '<i class="error"></i> ajuste a área'; showToast(error.message); } }, 80); }
+function runAnalysis() { if (!state.image || state.roi.length < 3) { state.result = null; renderResult(); return; } state.loading = true; el('#analysis-status').innerHTML = '<i class="busy"></i> processando imagem'; setTimeout(() => { try { const ctx = document.createElement('canvas').getContext('2d'); ctx.canvas.width = state.displayWidth; ctx.canvas.height = state.displayHeight; ctx.drawImage(state.image, 0, 0, state.displayWidth, state.displayHeight); state.result = analyzePixels(ctx.getImageData(0, 0, state.displayWidth, state.displayHeight).data, state.displayWidth, state.displayHeight, state.roi, effectiveMmPerPixel(Number(state.scaleMm) || 50, state.naturalWidth, state.displayWidth), state.quality); el('#analysis-status').innerHTML = '<i></i> análise concluída'; el('#map-hint').textContent = `${fmt(state.result.roiAreaM2, 0)} m² avaliados · ${fmtInt(state.result.sampleCount)} amostras`; state.loading = false; renderResult(); } catch (error) { state.loading = false; el('#analysis-status').innerHTML = '<i class="error"></i> ajuste a área'; showToast(error.message); } }, 80); }
 
 function toggleDrawing(force) { state.roiMode = typeof force === 'boolean' ? force : !state.roiMode; el('#draw-button').classList.toggle('is-active', state.roiMode); el('#draw-button').textContent = state.roiMode ? '✓ Finalizar área' : '＋ Desenhar área na imagem'; el('#draw-tip').classList.toggle('is-visible', state.roiMode); el('#map-stage').classList.toggle('is-drawing', state.roiMode); if (state.roiMode) { state.roi = []; state.result = null; renderResult(); } }
 function orientation(a, b, c) { return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]); }

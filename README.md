@@ -7,7 +7,7 @@ pilhas e frentes de mina. Todo o processamento acontece no navegador.
 
 1. Carregue uma ortofoto PNG, JPG, WEBP ou TIFF.
 2. Confira ou desenhe o polígono da área a analisar.
-3. Informe a escala estimada em milímetros por pixel.
+3. Informe a escala estimada em milímetros por pixel **nativo** da ortofoto. A análise roda em uma versão reduzida (até 1500 px no maior lado); a escala é convertida automaticamente para o pixel analisado (`effectiveMmPerPixel` em `src/analysis.js`).
 4. Execute a leitura e confira D10, D50, D80, finos, curva e tabela passante.
 5. Exporte a distribuição em CSV ou gere uma versão para impressão/PDF.
 
