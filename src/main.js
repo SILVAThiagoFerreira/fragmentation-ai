@@ -1,5 +1,6 @@
 import './styles.css';
 import demoImageUrl from './assets/ortofoto-exemplo.webp';
+import enaexLogoWhiteUrl from './assets/enaex-brasil-white.png';
 import * as UTIF from 'utif';
 import { buildDistribution, effectiveMmPerPixel } from './analysis.js';
 
@@ -35,9 +36,9 @@ const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 function appTemplate() {
   return `
     <header class="topbar">
-      <div class="topbar__brand"><span class="enaex-mark" aria-hidden="true">✦</span><span class="enaex-word">Enaex <small>Brasil</small></span></div>
+      <img class="topbar__logo" src="${enaexLogoWhiteUrl}" alt="Enaex Brasil" />
       <div class="topbar__title">Fragmentation <b>AI</b></div>
-      <div class="topbar__meta"><span class="live-dot"></span> processamento local <span class="divider"></span> v1.0</div>
+      <span class="topbar__unit">US Vale Verde</span>
     </header>
     <div class="notice"><span class="notice__icon">i</span><span><b>Modo de demonstração.</b> A ortofoto reduzida está ativa enquanto aguardamos a imagem específica da pilha. O resultado é uma estimativa visual indicativa e deve ser calibrado com escala de campo.</span></div>
     <main class="workspace">
